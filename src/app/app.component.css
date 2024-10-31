@@ -1,0 +1,19 @@
+.birthday-message {
+    position: fixed; /* Fix the position relative to the viewport */
+    top: 50%; /* Center it vertically */
+    left: 50%; /* Center it horizontally */
+    transform: translate(-50%, -50%); /* Adjust position to be truly centered */
+    background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent white background */
+    padding: 20px; /* Padding around the text */
+    border-radius: 10px; /* Rounded corners */
+    font-size: 32px; /* Larger font size for visibility */
+    color: #333; /* Dark text color */
+    text-align: center; /* Center the text */
+    z-index: 10; /* Ensure it's above the canvas */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); /* Optional shadow for depth */
+    transition: opacity 0.5s ease; /* Smooth transition for the appearance */
+}
+
+.birthday-message.fade-out {
+    opacity: 0; /* Class to fade out the message */
+}
