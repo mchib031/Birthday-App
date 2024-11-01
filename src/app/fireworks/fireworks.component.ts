@@ -9,20 +9,21 @@ interface Shell {
   color: string;
 }
 
-interface Pass {
+interface Particle {
   x: number;
   y: number;
   xoff: number;
   yoff: number;
   size: number;
   color: string;
+  lifespan: number;
 }
 
 @Component({
   selector: 'app-fireworks',
   template: `<canvas id="Canvas"></canvas>`,
   styleUrls: ['./fireworks.component.css'],
-  standalone: true // Set this component as standalone
+  standalone: true
 })
 export class FireworksComponent implements AfterViewInit {
   private c!: HTMLCanvasElement;
@@ -30,7 +31,7 @@ export class FireworksComponent implements AfterViewInit {
   private cwidth!: number;
   private cheight!: number;
   private shells: Shell[] = [];
-  private pass: Pass[] = [];
+  private particles: Particle[] = [];
   private colors = [
     '#FF5252', '#FF4081', '#E040FB', '#7C4DFF', 
     '#536DFE', '#448AFF', '#40C4FF', '#18FFFF', 
@@ -47,8 +48,8 @@ export class FireworksComponent implements AfterViewInit {
 
   @HostListener('window:resize', ['$event'])
   reset() {
-    this.cwidth = window.innerWidth;
-    this.cheight = window.innerHeight;
+    this.cwidth = window.innerWidth / 10;
+    this.cheight = window.innerHeight / 10;
     this.c.width = this.cwidth;
     this.c.height = this.cheight;
   }
@@ -63,28 +64,29 @@ export class FireworksComponent implements AfterViewInit {
       size: Math.random() * 6 + 3,
       color: this.colors[Math.floor(Math.random() * this.colors.length)]
     };
-  
     this.shells.push(shell);
   }
-  
-  private newPass(shell: Shell) {
-    const pasCount = Math.ceil(Math.pow(shell.size, 2) * Math.PI);
-  
-    for (let i = 0; i < pasCount; i++) {
-      const pas: Pass = { 
+
+  private explodeShell(shell: Shell) {
+    const particleCount = Math.ceil(Math.pow(shell.size, 2) * Math.PI);
+
+    for (let i = 0; i < particleCount; i++) {
+      const angle = Math.random() * 2 * Math.PI;
+      const speed = Math.random() * 2 + 1;
+
+      const particle: Particle = {
         x: shell.x * this.cwidth,
         y: shell.y * this.cheight,
-        xoff: Math.random() * 10 * Math.sin((5 - Math.random() * 4) * (Math.PI / 2)),
-        yoff: Math.random() * 10 * Math.sin(Math.random() * 4 * (Math.PI / 2)),
+        xoff: Math.cos(angle) * speed,
+        yoff: Math.sin(angle) * speed,
         color: shell.color,
-        size: Math.sqrt(shell.size)
+        size: Math.sqrt(shell.size),
+        lifespan: 100 + Math.random() * 100
       };
-  
-      if (this.pass.length < 1000) {
-        this.pass.push(pas);
-      }
+      this.particles.push(particle);
     }
   }
+
   private lastRun = 0;
 
   run() {
@@ -98,8 +100,8 @@ export class FireworksComponent implements AfterViewInit {
       this.newShell();
     }
 
-    for (let ix in this.shells) {
-      const shell = this.shells[ix];
+    for (let i = this.shells.length - 1; i >= 0; i--) {
+      const shell = this.shells[i];
 
       this.ctx.beginPath();
       this.ctx.arc(shell.x * this.cwidth, shell.y * this.cheight, shell.size, 0, 2 * Math.PI);
@@ -108,31 +110,30 @@ export class FireworksComponent implements AfterViewInit {
 
       shell.x -= shell.xoff;
       shell.y -= shell.yoff;
-      shell.xoff -= (shell.xoff * dt * 0.001);
-      shell.yoff -= ((shell.yoff + 0.2) * dt * 0.00005);
+      shell.yoff -= 0.02;  // Adds a gravity effect
 
-      if (shell.yoff < -0.005) {
-        this.newPass(shell);
-        this.shells.splice(Number(ix), 1);
+      if (shell.yoff < -0.01) {
+        this.explodeShell(shell);
+        this.shells.splice(i, 1);
       }
     }
 
-    for (let ix in this.pass) {
-      const pas = this.pass[ix];
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const particle = this.particles[i];
 
       this.ctx.beginPath();
-      this.ctx.arc(pas.x, pas.y, pas.size, 0, 2 * Math.PI);
-      this.ctx.fillStyle = pas.color;
+      this.ctx.arc(particle.x, particle.y, particle.size, 0, 2 * Math.PI);
+      this.ctx.fillStyle = particle.color;
       this.ctx.fill();
 
-      pas.x -= pas.xoff;
-      pas.y -= pas.yoff;
-      pas.xoff -= (pas.xoff * dt * 0.001);
-      pas.yoff -= ((pas.yoff + 5) * dt * 0.0005);
-      pas.size -= (dt * 0.002 * Math.random());
+      particle.x += particle.xoff;
+      particle.y += particle.yoff;
+      particle.yoff += 0.02;  // Gravity effect
+      particle.size *= 0.98;  // Shrinks over time
+      particle.lifespan -= dt;
 
-      if (pas.y > this.cheight || pas.y < -50 || pas.size <= 0) {
-        this.pass.splice(Number(ix), 1);
+      if (particle.lifespan <= 0 || particle.size <= 0) {
+        this.particles.splice(i, 1);
       }
     }
     
